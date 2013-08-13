@@ -86,9 +86,13 @@ public class S3ClientFactory{
 		Resource resource = resourceLoader.getResource(credentialFilename);
 		File file = resource.getFile();
 		if (!file.exists()){
-			logger.error("Current default path is [{}], can not find the file [{}].",
-					resourceLoader.getResource(".").getFile().getAbsolutePath(),
-					credentialFilename);
+			logger.error("Can not find the file [{}]. Current file path is [{}], class path is [{}], "
+					+ "the setting value is [{}].",
+					new Object[]{
+						file.getAbsolutePath(),
+						resourceLoader.getResource("file:.").getFile().getAbsolutePath(),
+						resourceLoader.getResource("classpath:.").getFile().getAbsolutePath(),
+						credentialFilename});
 			throw new FileNotFoundException();
 		}
 

@@ -20,71 +20,69 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Map;
-import org.archboy.clobaframe.blobstore.BlobInfo;
+import org.archboy.clobaframe.blobstore.BlobResourceInfo;
 import org.archboy.clobaframe.blobstore.BlobKey;
-import org.archboy.clobaframe.webio.ResourceContent;
-import org.archboy.clobaframe.webio.impl.DefaultResourceContent;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
-
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+import java.io.InputStream;
 
 /**
- * Translate Amazon S3 object into {@link BlobInfo}.
+ * Translate Amazon S3 object info {@link BlobResourceInfo} with lazy load.
  *
  * @author young
  *
  */
-public class BlobInfoFromS3Object implements BlobInfo {
+public class BlobResourceInfoFromS3ObjectSummary implements BlobResourceInfo {
 
-	private BlobKey blobKey;
-	private ObjectMetadata objectMetadata;
+	private S3ObjectSummary summary;
 	private AmazonS3 client;
+	private ObjectMetadata objectMetadata;
 
-	public BlobInfoFromS3Object(BlobKey blobKey, ObjectMetadata objectMetadata, AmazonS3 client) {
-		this.blobKey = blobKey;
-		this.objectMetadata = objectMetadata;
+	public BlobResourceInfoFromS3ObjectSummary(S3ObjectSummary summary, AmazonS3 client) {
+		this.summary = summary;
 		this.client = client;
 	}
 
 	@Override
 	public BlobKey getBlobKey() {
-		return blobKey;
+		return new BlobKey(
+				summary.getBucketName(),
+				summary.getKey());
 	}
 
 	@Override
 	public long getContentLength() {
-		return objectMetadata.getContentLength();
+		return summary.getSize();
 	}
 
 	@Override
 	public String getContentType() {
-		return objectMetadata.getContentType();
+		return buildObjectMetadata().getContentType();
 	}
 
 	@Override
 	public Date getLastModified() {
-		return objectMetadata.getLastModified();
+		return summary.getLastModified();
 	}
 
 	@Override
-	public ResourceContent getContentSnapshot() throws IOException{
+	public InputStream getInputStream() throws IOException{
 		try{
 			S3Object s3Object = client.getObject(
-					blobKey.getBucketName(),
-					blobKey.getKey());
+					summary.getBucketName(),
+					summary.getKey());
 
-			return new DefaultResourceContent(
-					s3Object.getObjectContent(),
-					objectMetadata.getContentLength());
+			return s3Object.getObjectContent();
 
 		}catch (AmazonS3Exception e) {
 			if (e.getStatusCode() == 404){
 				throw new FileNotFoundException(String.format(
 						"Blob [%s] not found in the bucket [%s].",
-						blobKey.getKey(), blobKey.getBucketName()));
+						summary.getKey(), summary.getBucketName()));
 			}else{
 				throw new IOException(e);
 			}
@@ -92,24 +90,22 @@ public class BlobInfoFromS3Object implements BlobInfo {
 	}
 
 	@Override
-	public ResourceContent getContentSnapshot(long start, long length) throws IOException {
+	public InputStream getInputStream(long start, long length) throws IOException{
 		try{
 			GetObjectRequest request = new GetObjectRequest(
-					blobKey.getBucketName(),
-					blobKey.getKey());
+					summary.getBucketName(),
+					summary.getKey());
 
-			request.setRange(start, start + length - 1); // both start and end byte are include.
+			request.setRange(start, start + length -1); // both start and end byte are include.
 			S3Object s3Object = client.getObject(request);
 
-			return new DefaultResourceContent(
-					s3Object.getObjectContent(),
-					objectMetadata.getContentLength());
+			return s3Object.getObjectContent();
 
 		}catch (AmazonS3Exception e) {
 			if (e.getStatusCode() == 404){
 				throw new FileNotFoundException(String.format(
 						"Blob [%s] not found in the bucket [%s].",
-						blobKey.getKey(), blobKey.getBucketName()));
+						summary.getKey(), summary.getBucketName()));
 			}else{
 				throw new IOException(e);
 			}
@@ -117,18 +113,26 @@ public class BlobInfoFromS3Object implements BlobInfo {
 	}
 
 	@Override
-	public boolean isContentSeekable() {
+	public boolean isSeekable() {
 		return true;
 	}
 
 	@Override
 	public Map<String, String> getMetadata() {
-		return objectMetadata.getUserMetadata();
+		return buildObjectMetadata().getUserMetadata();
 	}
 
 	@Override
 	public void addMetadata(String key, String value) {
-		objectMetadata.addUserMetadata(key, value);
+		buildObjectMetadata().addUserMetadata(key, value);
 	}
 
+	private synchronized ObjectMetadata buildObjectMetadata() {
+		if (objectMetadata == null){
+			objectMetadata = client.getObjectMetadata(
+				summary.getBucketName(),
+				summary.getKey());
+		}
+		return objectMetadata;
+	}
 }

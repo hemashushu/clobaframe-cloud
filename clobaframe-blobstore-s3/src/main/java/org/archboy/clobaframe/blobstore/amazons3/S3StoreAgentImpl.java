@@ -21,15 +21,14 @@ import java.io.IOException;
 import javax.annotation.PostConstruct;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import javax.inject.Inject;
+import javax.inject.Named;
 import org.springframework.util.Assert;
-import org.archboy.clobaframe.blobstore.BlobInfo;
-import org.archboy.clobaframe.blobstore.BlobInfoPartialCollection;
+import org.archboy.clobaframe.blobstore.BlobResourceInfo;
+import org.archboy.clobaframe.blobstore.BlobResourceInfoPartialCollection;
 import org.archboy.clobaframe.blobstore.BlobKey;
 import org.archboy.clobaframe.blobstore.Blobstore;
 import org.archboy.clobaframe.blobstore.StoreAgent;
-import org.archboy.clobaframe.webio.ResourceContent;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
@@ -40,6 +39,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.StorageClass;
+import java.io.InputStream;
 
 /**
  * {@link Blobstore} implements for Amazon S3.
@@ -47,10 +47,10 @@ import com.amazonaws.services.s3.model.StorageClass;
  * @author young
  *
  */
-@Component
+@Named
 public class S3StoreAgentImpl implements StoreAgent {
 
-	@Autowired
+	@Inject
 	private S3ClientFactory clientFactory;
 
 	private AmazonS3 client;
@@ -102,21 +102,22 @@ public class S3StoreAgentImpl implements StoreAgent {
 	}
 
 	@Override
-	public void put(BlobInfo blobInfo, boolean publicReadable, boolean minor) throws IOException {
-		Assert.notNull(blobInfo);
+	public void put(BlobResourceInfo blobResourceInfo, boolean publicReadable, boolean minor) throws IOException {
+		Assert.notNull(blobResourceInfo);
 
 		ObjectMetadata meta = new ObjectMetadata();
-		meta.setContentLength(blobInfo.getContentLength());
-		meta.setContentType(blobInfo.getContentType());
-		meta.setUserMetadata(blobInfo.getMetadata());
+		meta.setContentLength(blobResourceInfo.getContentLength());
+		meta.setContentType(blobResourceInfo.getContentType());
+		meta.setUserMetadata(blobResourceInfo.getMetadata());
 
-		BlobKey blobKey = blobInfo.getBlobKey();
-		ResourceContent resourceContent = blobInfo.getContentSnapshot();
+		BlobKey blobKey = blobResourceInfo.getBlobKey();
+		//ResourceContent resourceContent = blobInfo.getContentSnapshot();
+		InputStream in = blobResourceInfo.getInputStream();
 
 		PutObjectRequest request = new PutObjectRequest(
 				blobKey.getBucketName(),
 				blobKey.getKey(),
-				resourceContent.getInputStream(),
+				in,
 				meta);
 
 		if (publicReadable) {
@@ -132,19 +133,19 @@ public class S3StoreAgentImpl implements StoreAgent {
 		}catch(AmazonClientException e){
 			throw new IOException(e);
 		}finally{
-			IOUtils.closeQuietly(resourceContent);
+			IOUtils.closeQuietly(in);
 		}
 	}
 
 	@Override
-	public BlobInfo get(BlobKey blobKey) throws IOException {
+	public BlobResourceInfo get(BlobKey blobKey) throws IOException {
 		Assert.notNull(blobKey);
 
 		try{
 			ObjectMetadata objectMetadata = client.getObjectMetadata(
 					blobKey.getBucketName(),
 					blobKey.getKey());
-			return new BlobInfoFromS3Object(blobKey, objectMetadata, client);
+			return new BlobResourceInfoFromS3Object(blobKey, objectMetadata, client);
 		}catch (AmazonS3Exception e) {
 			if (e.getStatusCode() == 404){
 				throw new FileNotFoundException(String.format(
@@ -174,7 +175,7 @@ public class S3StoreAgentImpl implements StoreAgent {
 	}
 
 	@Override
-	public BlobInfoPartialCollection list(BlobKey prefix) {
+	public BlobResourceInfoPartialCollection list(BlobKey prefix) {
 		Assert.notNull(prefix);
 
 		ObjectListing objectListing = null;
@@ -188,18 +189,18 @@ public class S3StoreAgentImpl implements StoreAgent {
 	}
 
 	@Override
-	public BlobInfoPartialCollection listNext(BlobInfoPartialCollection collection) {
-		Assert.isInstanceOf(S3BlobInfoPartialCollection.class, collection);
+	public BlobResourceInfoPartialCollection listNext(BlobResourceInfoPartialCollection collection) {
+		Assert.isInstanceOf(S3BlobResourceInfoPartialCollection.class, collection);
 
-		ObjectListing oldObjectListing = ((S3BlobInfoPartialCollection)collection).getObjectListing();
+		ObjectListing oldObjectListing = ((S3BlobResourceInfoPartialCollection)collection).getObjectListing();
 		ObjectListing objectListing = client.listNextBatchOfObjects(oldObjectListing);
 		return convertToCollection(objectListing);
 	}
 
-	private BlobInfoPartialCollection convertToCollection(ObjectListing objectListing) {
-		S3BlobInfoPartialCollection collection = new S3BlobInfoPartialCollection(objectListing);
+	private BlobResourceInfoPartialCollection convertToCollection(ObjectListing objectListing) {
+		S3BlobResourceInfoPartialCollection collection = new S3BlobResourceInfoPartialCollection(objectListing);
 		for (S3ObjectSummary summary : objectListing.getObjectSummaries()) {
-			collection.add(new BlobInfoFromS3ObjectSummary(summary, client));
+			collection.add(new BlobResourceInfoFromS3ObjectSummary(summary, client));
 		}
 
 		collection.setHasMore(objectListing.isTruncated());

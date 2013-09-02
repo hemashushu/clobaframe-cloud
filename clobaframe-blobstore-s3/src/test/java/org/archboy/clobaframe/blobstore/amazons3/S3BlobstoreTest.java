@@ -18,6 +18,7 @@ package org.archboy.clobaframe.blobstore.amazons3;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,16 +27,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.archboy.clobaframe.blobstore.BlobInfo;
-import org.archboy.clobaframe.blobstore.BlobInfoFactory;
-import org.archboy.clobaframe.blobstore.BlobInfoPartialCollection;
+import org.archboy.clobaframe.blobstore.BlobResourceInfo;
+import org.archboy.clobaframe.blobstore.BlobResourceInfoFactory;
+import org.archboy.clobaframe.blobstore.BlobResourceInfoPartialCollection;
 import org.archboy.clobaframe.blobstore.BlobKey;
 import org.archboy.clobaframe.blobstore.Blobstore;
-import org.archboy.clobaframe.webio.ResourceContent;
 import static org.junit.Assert.*;
 
 
@@ -43,14 +43,14 @@ import static org.junit.Assert.*;
 @ContextConfiguration(locations = { "/applicationContext.xml" })
 public class S3BlobstoreTest {
 
-	@Autowired
+	@Inject
 	private Blobstore blobstore;
 
-//	@Autowired
+//	@Inject
 //	private BlobstoreBucket blobstoreBucket;
 
-	@Autowired
-	private BlobInfoFactory blobInfoFactory;
+	@Inject
+	private BlobResourceInfoFactory blobResourceInfoFactory;
 
 	private static final String DEFAULT_BUCKET_NAME = "test-clobaframe-bucket";
 
@@ -77,7 +77,7 @@ public class S3BlobstoreTest {
 			return;
 		}
 
-		// test create
+		// test make
 		blobstore.createBucket(bucketName);
 		Thread.sleep(5000);
 
@@ -117,25 +117,25 @@ public class S3BlobstoreTest {
 		writeContent(blobstore, blobKey1, "hello", metadata);
 
 		// test get blob by key
-		BlobInfo blobInfoByKey1 = blobstore.get(blobKey1);
-		assertEquals(blobKey1, blobInfoByKey1.getBlobKey());
-		assertEquals("text/plain", blobInfoByKey1.getContentType());
-		assertEquals(5, blobInfoByKey1.getContentLength());
-		assertNotNull(blobInfoByKey1.getLastModified());
+		BlobResourceInfo blobByKey1 = blobstore.get(blobKey1);
+		assertEquals(blobKey1, blobByKey1.getBlobKey());
+		assertEquals("text/plain", blobByKey1.getContentType());
+		assertEquals(5, blobByKey1.getContentLength());
+		assertNotNull(blobByKey1.getLastModified());
 
-		assertEquals(blobInfoByKey1.getMetadata().get("author"), "test");
-		assertEquals(blobInfoByKey1.getMetadata().get("price"), "99.0");
+		assertEquals(blobByKey1.getMetadata().get("author"), "test");
+		assertEquals(blobByKey1.getMetadata().get("price"), "99.0");
 
 		// test get blob content
-		assertEquals("hello", readContent(blobInfoByKey1));
+		assertEquals("hello", readContent(blobByKey1));
 
 		// test get blob content partial
-		assertEquals("ll", readContent(blobInfoByKey1,2,2));
+		assertEquals("ll", readContent(blobByKey1,2,2));
 
 		// test overwrite blob content
 		writeContent(blobstore, blobKey1, "woo");
-		BlobInfo blobByKey2 = blobstore.get(blobKey1);
-		assertEquals("woo", readContent(blobByKey2));
+		BlobResourceInfo overwriteBlobByKey1 = blobstore.get(blobKey1);
+		assertEquals("woo", readContent(overwriteBlobByKey1));
 
 		// test get none-exists blob
 		BlobKey blobKeyNoneExists = new BlobKey(bucketName, "noneExists");
@@ -163,21 +163,21 @@ public class S3BlobstoreTest {
 		byte[] data1 = "bar".getBytes();
 
 		BlobKey blobKey2 = new BlobKey(bucketName, key2);
-		BlobInfo blobInfoByFactory1 = blobInfoFactory.createBlobInfo(blobKey2, 3, "text/plain", in1);
+		BlobResourceInfo blobByFactory1 = blobResourceInfoFactory.make(blobKey2, "text/plain", in1, 3);
 
 		BlobKey blobKey3 = new BlobKey(bucketName, key3);
-		BlobInfo blobInfoByFactory2 = blobInfoFactory.createBlobInfo(blobKey3, "text/plain", data1);
+		BlobResourceInfo blobByFactory2 = blobResourceInfoFactory.make(blobKey3, "text/plain", data1);
 
-		blobstore.put(blobInfoByFactory1, true, false);
-		blobstore.put(blobInfoByFactory2, false, true);
+		blobstore.put(blobByFactory1, true, false);
+		blobstore.put(blobByFactory2, false, true);
 
 		in1.close();
 
-		BlobInfo blobInfoByKey2 = blobstore.get(blobKey2);
-		BlobInfo blobInfoByKey3 = blobstore.get(blobKey3);
+		BlobResourceInfo blobByKey2 = blobstore.get(blobKey2);
+		BlobResourceInfo blobByKey3 = blobstore.get(blobKey3);
 
-		assertEquals("foo", readContent(blobInfoByKey2));
-		assertEquals("bar", readContent(blobInfoByKey3));
+		assertEquals("foo", readContent(blobByKey2));
+		assertEquals("bar", readContent(blobByKey3));
 
 		// clean up
 		cleanByKey(key2);
@@ -207,9 +207,9 @@ public class S3BlobstoreTest {
 		BlobKey prefixAll = new BlobKey(bucketName, null);
 
 		// delete exist blobs
-		BlobInfoPartialCollection blobs = blobstore.list(prefixAll);
+		BlobResourceInfoPartialCollection blobs = blobstore.list(prefixAll);
 		if (blobs.size() > 0){
-			for(BlobInfo blob : blobs){
+			for(BlobResourceInfo blob : blobs){
 				blobstore.delete(blob.getBlobKey());
 			}
 		}
@@ -222,7 +222,7 @@ public class S3BlobstoreTest {
 		writeContent(blobstore, new BlobKey(bucketName, "r"), "r");
 
 		// test list
-		BlobInfoPartialCollection blobsByNoPrefix1 = blobstore.list(prefixAll);
+		BlobResourceInfoPartialCollection blobsByNoPrefix1 = blobstore.list(prefixAll);
 		assertEquals(5, blobsByNoPrefix1.size());
 		assertFalse(blobsByNoPrefix1.hasMore());
 
@@ -232,23 +232,23 @@ public class S3BlobstoreTest {
 		assertContainsKey(blobsByNoPrefix1, "r-c-c001");
 		assertContainsKey(blobsByNoPrefix1, "r");
 
-		BlobInfoPartialCollection blobsByPrefix1 = blobstore.list(new BlobKey(bucketName, "r-"));
+		BlobResourceInfoPartialCollection blobsByPrefix1 = blobstore.list(new BlobKey(bucketName, "r-"));
 		assertEquals(3, blobsByPrefix1.size());
 		assertContainsKey(blobsByPrefix1, "r-c-c001");
 		assertContainsKey(blobsByPrefix1, "r-j001");
 		assertContainsKey(blobsByPrefix1, "r-j002");
 
-		BlobInfoPartialCollection blobsByPrefix2 = blobstore.list(new BlobKey(bucketName, "r-c-"));
+		BlobResourceInfoPartialCollection blobsByPrefix2 = blobstore.list(new BlobKey(bucketName, "r-c-"));
 		assertEquals(1, blobsByPrefix2.size());
 		assertContainsKey(blobsByPrefix2, "r-c-c001");
 
 		// delete all blobs
-		BlobInfoPartialCollection blobsByNoPrefix2 = blobstore.list(prefixAll);
-		for(BlobInfo blob : blobsByNoPrefix2){
+		BlobResourceInfoPartialCollection blobsByNoPrefix2 = blobstore.list(prefixAll);
+		for(BlobResourceInfo blob : blobsByNoPrefix2){
 			blobstore.delete(blob.getBlobKey());
 		}
 
-		BlobInfoPartialCollection blobsByRemove1 = blobstore.list(prefixAll);
+		BlobResourceInfoPartialCollection blobsByRemove1 = blobstore.list(prefixAll);
 		assertEquals(0, blobsByRemove1.size());
 	}
 
@@ -270,36 +270,38 @@ public class S3BlobstoreTest {
 			Map<String, String> metadata) throws IOException{
 		byte[] data = content.getBytes();
 		ByteArrayInputStream in = new ByteArrayInputStream(data);
-		BlobInfo blobInfo = blobInfoFactory.createBlobInfo(blobKey, data.length, "text/plain", in);
+		BlobResourceInfo blobResourceInfo = blobResourceInfoFactory.make(blobKey, "text/plain", in, data.length);
 
 		if (metadata != null){
 			for(String key : metadata.keySet()){
-				blobInfo.addMetadata(key, metadata.get(key));
+				blobResourceInfo.addMetadata(key, metadata.get(key));
 			}
 		}
-		blobstore.put(blobInfo);
-		IOUtils.closeQuietly(in);
+		blobstore.put(blobResourceInfo);
+		in.close();
 	}
 
 	private String readContent(
-			BlobInfo blob) throws IOException{
-		ResourceContent blobContent = blob.getContentSnapshot();
+			BlobResourceInfo blob) throws IOException{
+		//ResourceContent blobContent = blob.getContentSnapshot();
+		InputStream in = blob.getInputStream();
 		BufferedReader reader = new BufferedReader(
-				new InputStreamReader(blobContent.getInputStream()));
+				new InputStreamReader(in));
 		String content = reader.readLine();
 		reader.close();
-		blobContent.close();
+		in.close();
 		return content;
 	}
 
 	private String readContent(
-			BlobInfo blob, long start, long length) throws IOException{
-		ResourceContent blobContent = blob.getContentSnapshot(start, length);
+			BlobResourceInfo blob, long start, long length) throws IOException{
+		//ResourceContent blobContent = blob.getContentSnapshot(start, length);
+		InputStream in = blob.getInputStream(start, length);
 		BufferedReader reader = new BufferedReader(
-				new InputStreamReader(blobContent.getInputStream()));
+				new InputStreamReader(in));
 		String content = reader.readLine();
 		reader.close();
-		blobContent.close();
+		in.close();
 		return content;
 	}
 
@@ -313,9 +315,9 @@ public class S3BlobstoreTest {
 		}
 	}
 
-	private void assertContainsKey(BlobInfoPartialCollection collection, String key) {
+	private void assertContainsKey(BlobResourceInfoPartialCollection collection, String key) {
 		boolean found = false;
-		for (BlobInfo info : collection) {
+		for (BlobResourceInfo info : collection) {
 			if (info.getBlobKey().getKey().equals(key)){
 				found = true;
 				break;

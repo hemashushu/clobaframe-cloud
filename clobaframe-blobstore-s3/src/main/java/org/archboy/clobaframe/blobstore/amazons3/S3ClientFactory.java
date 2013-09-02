@@ -20,11 +20,11 @@ import java.io.IOException;
 
 import javax.annotation.PostConstruct;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.inject.Inject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.stereotype.Component;
+import javax.inject.Named;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * @author young
  *
  */
-@Component
+@Named
 public class S3ClientFactory{
 
 	private static final int DEFAULT_CONNECTION_TIMEOUT = 30 * 1000;
@@ -73,7 +73,7 @@ public class S3ClientFactory{
 	@Value("${blobstore.amazons3.secureConnection}")
 	private boolean secureConnection;
 
-	@Autowired
+	@Inject
 	private ResourceLoader resourceLoader;
 
 	private AmazonS3 client;

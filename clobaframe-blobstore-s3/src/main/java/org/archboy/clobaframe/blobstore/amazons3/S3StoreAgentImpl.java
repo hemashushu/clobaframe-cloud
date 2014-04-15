@@ -67,6 +67,8 @@ public class S3StoreAgentImpl implements StoreAgent {
 
 	@Override
 	public boolean existBucket(String name) {
+		Assert.hasText(name);
+		
 		return client.doesBucketExist(name);
 	}
 
@@ -90,6 +92,8 @@ public class S3StoreAgentImpl implements StoreAgent {
 
 	@Override
 	public void deleteBucket(String name) throws IOException {
+		Assert.hasText(name);
+		
 		try{
 			client.deleteBucket(name);
 		}catch (AmazonS3Exception e) {
@@ -198,6 +202,8 @@ public class S3StoreAgentImpl implements StoreAgent {
 	}
 
 	private BlobResourceInfoPartialCollection convertToCollection(ObjectListing objectListing) {
+		Assert.notNull(objectListing);
+		
 		S3BlobResourceInfoPartialCollection collection = new S3BlobResourceInfoPartialCollection(objectListing);
 		for (S3ObjectSummary summary : objectListing.getObjectSummaries()) {
 			collection.add(new BlobResourceInfoFromS3ObjectSummary(summary, client));

@@ -103,7 +103,7 @@ public class AmazonMailSenderAgent implements SenderAgent{
 			client.sendEmail(request);
 		} catch (AmazonClientException e) {
 			throw new SendMailException(
-					String.format("Failed to send mail to %s.", recipient));
+					String.format("Failed to send mail to %s.", recipient), e);
 		}
 	}
 
@@ -137,7 +137,7 @@ public class AmazonMailSenderAgent implements SenderAgent{
 			client.sendEmail(request);
 		} catch (AmazonClientException e) {
 			throw new SendMailException(
-					String.format("Failed to send mail to %s.", recipient));
+					String.format("Failed to send mail to %s.", recipient), e);
 		}
 	}
 }

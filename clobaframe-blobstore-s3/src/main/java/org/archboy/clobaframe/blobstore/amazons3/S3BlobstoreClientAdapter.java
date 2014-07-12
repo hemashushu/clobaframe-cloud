@@ -1,19 +1,3 @@
-/*
- * Copyright 2011 Spark Young (sparkyoungs@gmail.com). All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.archboy.clobaframe.blobstore.amazons3;
 
 import java.io.FileNotFoundException;
@@ -28,7 +12,7 @@ import org.archboy.clobaframe.blobstore.BlobResourceInfo;
 import org.archboy.clobaframe.blobstore.BlobResourceInfoPartialCollection;
 import org.archboy.clobaframe.blobstore.BlobKey;
 import org.archboy.clobaframe.blobstore.Blobstore;
-import org.archboy.clobaframe.blobstore.StoreAgent;
+import org.archboy.clobaframe.blobstore.impl.BlobstoreClientAdapter;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
@@ -44,11 +28,11 @@ import java.io.InputStream;
 /**
  * {@link Blobstore} implements for Amazon S3.
  *
- * @author young
+ * @author yang
  *
  */
 @Named
-public class S3StoreAgentImpl implements StoreAgent {
+public class S3BlobstoreClientAdapter implements BlobstoreClientAdapter {
 
 	@Inject
 	private S3ClientFactory clientFactory;
@@ -106,7 +90,7 @@ public class S3StoreAgentImpl implements StoreAgent {
 	}
 
 	@Override
-	public void put(BlobResourceInfo blobResourceInfo, boolean publicReadable, boolean minor) throws IOException {
+	public void put(BlobResourceInfo blobResourceInfo, boolean publicReadable, int priority) throws IOException {
 		Assert.notNull(blobResourceInfo);
 
 		ObjectMetadata meta = new ObjectMetadata();
@@ -128,7 +112,7 @@ public class S3StoreAgentImpl implements StoreAgent {
 			request.setCannedAcl(CannedAccessControlList.PublicRead);
 		}
 
-		if (minor) {
+		if (priority == Blobstore.MIN_STORE_PRIORITY) {
 			request.setStorageClass(StorageClass.ReducedRedundancy);
 		}
 

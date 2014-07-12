@@ -1,18 +1,3 @@
-/*
- * Copyright 2011 Spark Young (sparkyoungs@gmail.com). All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.archboy.clobaframe.blobstore.amazons3;
 
 import java.io.BufferedReader;
@@ -168,8 +153,8 @@ public class S3BlobstoreTest {
 		BlobKey blobKey3 = new BlobKey(bucketName, key3);
 		BlobResourceInfo blobByFactory2 = blobResourceInfoFactory.make(blobKey3, "text/plain", data1);
 
-		blobstore.put(blobByFactory1, true, false);
-		blobstore.put(blobByFactory2, false, true);
+		blobstore.put(blobByFactory1, true, Blobstore.DEFAULT_STORE_PRIOTITY);
+		blobstore.put(blobByFactory2, false, Blobstore.MIN_STORE_PRIORITY);
 
 		in1.close();
 
@@ -248,6 +233,8 @@ public class S3BlobstoreTest {
 			blobstore.delete(blob.getBlobKey());
 		}
 
+		Thread.sleep(5000);
+		
 		BlobResourceInfoPartialCollection blobsByRemove1 = blobstore.list(prefixAll);
 		assertEquals(0, blobsByRemove1.size());
 	}

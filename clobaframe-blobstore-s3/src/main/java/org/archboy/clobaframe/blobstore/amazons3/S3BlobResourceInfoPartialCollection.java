@@ -5,7 +5,7 @@ import com.amazonaws.services.s3.model.ObjectListing;
 
 /**
  *
- * @author arch
+ * @author yang
  */
 public class S3BlobResourceInfoPartialCollection extends AbstractBlobResourceInfoPartialCollection {
 

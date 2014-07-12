@@ -14,7 +14,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import javax.inject.Named;
 import org.archboy.clobaframe.mail.SendMailException;
-import org.archboy.clobaframe.mail.SenderAgent;
+import org.archboy.clobaframe.mail.impl.MailSenderClientAdapter;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.PropertiesCredentials;
@@ -28,12 +28,10 @@ import com.amazonaws.services.simpleemail.model.SendEmailRequest;
 /**
  * Send mail by Amazon SNS service.
  *
- * @author arch
+ * @author yang
  */
 @Named
-public class AmazonMailSenderAgent implements SenderAgent{
-
-	private static final String AGENT_NAME = "amazonses";
+public class AmazonMailSenderClientAdapter implements MailSenderClientAdapter{
 
 	private static final String DEFAULT_CREDENTIAL_FILE_NAME = "classpath:AwsCredentials.properties";
 
@@ -47,7 +45,8 @@ public class AmazonMailSenderAgent implements SenderAgent{
 	private ResourceLoader resourceLoader;
 
 	private AmazonSimpleEmailServiceClient client;
-	private Logger logger = LoggerFactory.getLogger(AmazonMailSenderAgent.class);
+	
+	private Logger logger = LoggerFactory.getLogger(AmazonMailSenderClientAdapter.class);
 
 	@PostConstruct
 	public void init() throws IOException{
@@ -68,7 +67,7 @@ public class AmazonMailSenderAgent implements SenderAgent{
 
 	@Override
 	public String getName() {
-		return AGENT_NAME;
+		return "amazonses";
 	}
 
 	@Override

@@ -1,7 +1,7 @@
 How to run the unit test:
 ------------------------
 
-1. Pass the clobaframe all unit test first.
+1. Ensure all the clobaframe unit test can pass first.
 
 2. Check out source code to the folder:
     ~/projects/archboy/clobaframe-amazon

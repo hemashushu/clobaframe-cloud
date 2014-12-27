@@ -37,7 +37,7 @@ public class S3BlobstoreTest {
 	@Inject
 	private BlobResourceInfoFactory blobResourceInfoFactory;
 
-	private static final String DEFAULT_BUCKET_NAME = "test-clobaframe-bucket";
+	private static final String DEFAULT_BUCKET_NAME = "test-clobaframe-blobstore-bucket";
 
 	@Value("${test.blobstore.bucketName}")
 	private String bucketName = DEFAULT_BUCKET_NAME;

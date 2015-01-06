@@ -6,11 +6,13 @@ The clobaframe implements for Amazon Web Service.
 Unit test
 ---------
 
-1. Complete all clobaframe unit tests first.
+1. Complete all clobaframe unit tests.
 
-2. Check out source code to any folder.
+2. Install clobaframe library into local Apache Maven repository.
 
-3. Register AWS and get a credentials file, and save the file into /etc/clobaframe folder.
+3. Check out source code to any folder.
+
+4. Register AWS and get a credentials file, and save the file into /etc/clobaframe folder.
 
 /etc/clobaframe/AwsCredentials.properties
 
@@ -23,13 +25,14 @@ Make sure the current login user has the file read permission, this can be done 
 
 $ sudo chmod o+r /etc/clobaframe/AwsCredentials.properties
 
-4. Run unit test with Apache Maven:
+5. Run unit test with Apache Maven:
+
     $mvn clean test
 
 Install library
 ---------------
 
-Install clobaframe into Apache Maven local repository:
+Install clobaframe-amazon into Apache Maven local repository:
 
     $ mvn clean javadoc:jar source:jar install
 

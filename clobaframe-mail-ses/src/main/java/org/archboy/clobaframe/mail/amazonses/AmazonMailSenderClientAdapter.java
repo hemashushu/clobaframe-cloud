@@ -56,7 +56,7 @@ public class AmazonMailSenderClientAdapter implements MailSenderClientAdapter{
 			logger.error("Current default path is [{}], can not find the file [{}].",
 					resourceLoader.getResource(".").getFile().getAbsolutePath(),
 					credentialFilename);
-			throw new FileNotFoundException();
+			throw new FileNotFoundException("Can not find the credential file.");
 		}
 
 		AWSCredentials credentials = new PropertiesCredentials(file);

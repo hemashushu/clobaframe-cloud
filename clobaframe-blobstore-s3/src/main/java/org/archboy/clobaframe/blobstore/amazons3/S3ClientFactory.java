@@ -77,7 +77,7 @@ public class S3ClientFactory{
 						resourceLoader.getResource("file:.").getFile().getAbsolutePath(),
 						resourceLoader.getResource("classpath:.").getFile().getAbsolutePath(),
 						credentialFilename});
-			throw new FileNotFoundException();
+			throw new FileNotFoundException("Can not find the credential file.");
 		}
 
 		AWSCredentials credentials = new PropertiesCredentials(file);

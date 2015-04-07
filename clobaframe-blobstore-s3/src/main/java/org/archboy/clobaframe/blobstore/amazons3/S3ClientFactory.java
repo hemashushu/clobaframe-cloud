@@ -1,26 +1,23 @@
 package org.archboy.clobaframe.blobstore.amazons3;
 
-import java.io.IOException;
-
-import javax.annotation.PostConstruct;
-
-import javax.inject.Inject;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
-import javax.inject.Named;
-
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.PropertiesCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
-import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Named;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 
 /**
  * Amazon S3 client factory.
@@ -89,7 +86,7 @@ public class S3ClientFactory{
 		
 		client.setEndpoint(endPoint);
 		
-		in.close();
+		IOUtils.closeQuietly(in);
 	}
 
 	public AmazonS3 getClient() {

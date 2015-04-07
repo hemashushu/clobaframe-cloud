@@ -18,12 +18,16 @@ import org.archboy.clobaframe.mail.impl.AbstractMailSender;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.PropertiesCredentials;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.amazonaws.services.simpleemail.model.Body;
 import com.amazonaws.services.simpleemail.model.Content;
 import com.amazonaws.services.simpleemail.model.Destination;
 import com.amazonaws.services.simpleemail.model.Message;
 import com.amazonaws.services.simpleemail.model.SendEmailRequest;
+import java.io.InputStream;
+import java.util.Arrays;
+import org.apache.commons.io.IOUtils;
 
 /**
  * Send mail by Amazon SNS service.
@@ -31,38 +35,40 @@ import com.amazonaws.services.simpleemail.model.SendEmailRequest;
  * @author yang
  */
 @Named
-public class AmazonMailSenderClientAdapter implements AbstractMailSender{
+public class AmazonSimpleMailSender extends AbstractMailSender {
 
 	private static final String DEFAULT_CREDENTIAL_FILE_NAME = "classpath:AwsCredentials.properties";
 
-	@Value("${amazon.credentials.file}")
+	@Value("${clobaframe.amazon.credentials.file}")
 	private String credentialFilename = DEFAULT_CREDENTIAL_FILE_NAME;
 
-	@Value("${mail.amazonses.fromAddress}")
-	private String fromAddress; //"noreply@tapedock.com"
+	@Value("${clobaframe.mail.amazonses.fromAddress}")
+	private String fromAddress; 
 
 	@Inject
 	private ResourceLoader resourceLoader;
 
 	private AmazonSimpleEmailServiceClient client;
 	
-	private Logger logger = LoggerFactory.getLogger(AmazonMailSenderClientAdapter.class);
+	private Logger logger = LoggerFactory.getLogger(AmazonSimpleMailSender.class);
 
 	@PostConstruct
 	public void init() throws IOException{
 		Resource resource = resourceLoader.getResource(credentialFilename);
-		File file = resource.getFile();
-		if (!file.exists()){
-			logger.error("Current default path is [{}], can not find the file [{}].",
-					resourceLoader.getResource(".").getFile().getAbsolutePath(),
-					credentialFilename);
-			throw new FileNotFoundException("Can not find the credential file.");
+		if (!resource.exists()){
+			throw new FileNotFoundException(
+					String.format(
+							"Can not find the amazon web service credential file [{}].",
+							credentialFilename));
 		}
 
-		AWSCredentials credentials = new PropertiesCredentials(file);
+		InputStream in = resource.getInputStream();
+		AWSCredentials credentials = new PropertiesCredentials(in);
+		IOUtils.closeQuietly(in);
 
 		// Set AWS access credentials
-		client = new AmazonSimpleEmailServiceClient(credentials);
+		client = new AmazonSimpleEmailServiceClient(credentials)
+				.withEndpoint("email.us-east-1.amazonaws.com");
 	}
 
 	@Override
@@ -75,13 +81,19 @@ public class AmazonMailSenderClientAdapter implements AbstractMailSender{
 		SendEmailRequest request = new SendEmailRequest()
 				.withSource(fromAddress);
 
-		List<String> toAddresses = new ArrayList<String>();
-		toAddresses.add(recipient);
-		Destination dest = new Destination().withToAddresses(toAddresses);
+//		List<String> toAddresses = new ArrayList<String>();
+//		toAddresses.add(recipient);
+		List<String> toAddresses = Arrays.asList(recipient);
+		Destination dest = new Destination()
+				.withToAddresses(toAddresses);
+		
 		request.setDestination(dest);
 
-		Content subjectContent = new Content().withData(subject);
-		Message message = new Message().withSubject(subjectContent);
+		Content subjectContent = new Content()
+				.withData(subject);
+		
+		Message message = new Message()
+				.withSubject(subjectContent);
 
 		// Include a body in both text and HTML formats
 		Content textContent = new Content()
@@ -98,12 +110,12 @@ public class AmazonMailSenderClientAdapter implements AbstractMailSender{
 		request.setMessage(message);
 
 		// Call Amazon SES to send the message
-		try {
+		//try {
 			client.sendEmail(request);
-		} catch (AmazonClientException e) {
-			throw new SendMailException(
-					String.format("Failed to send mail to %s.", recipient), e);
-		}
+//		} catch (AmazonClientException e) {
+//			throw new SendMailException(
+//					String.format("Failed to send mail to %s.", recipient), e);
+//		}
 	}
 
 	@Override
@@ -111,17 +123,22 @@ public class AmazonMailSenderClientAdapter implements AbstractMailSender{
 		SendEmailRequest request = new SendEmailRequest()
 				.withSource(fromAddress);
 
-		List<String> toAddresses = new ArrayList<String>();
-		toAddresses.add(recipient);
+		//List<String> toAddresses = new ArrayList<String>();
+		//toAddresses.add(recipient);
+		List<String> toAddresses = Arrays.asList(recipient);
 		Destination dest = new Destination().withToAddresses(toAddresses);
 		request.setDestination(dest);
 
-		Content subjectContent = new Content().withData(subject);
-		Message message = new Message().withSubject(subjectContent);
+		Content subjectContent = new Content()
+				.withData(subject);
+		
+		Message message = new Message()
+				.withSubject(subjectContent);
 
 		// Include a body in both text and HTML formats
 		//Content textContent = new Content().withData(content);
-		Content htmlContent = new Content().withData(content);
+		Content htmlContent = new Content()
+				.withData(content);
 
 		Body body = new Body()
 				//.withText(textContent);

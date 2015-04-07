@@ -18,6 +18,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.InputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,9 +34,12 @@ public class S3ClientFactory{
 	private static final int DEFAULT_CONNECTION_TIMEOUT = 30 * 1000;
 	private static final int DEFAULT_READ_TIMEOUT = 30 * 1000;
 
+	private int connectionTimeout = DEFAULT_CONNECTION_TIMEOUT;
+	private int readTimeout = DEFAULT_READ_TIMEOUT;
+	
 	private static final String DEFAULT_CREDENTIAL_FILE_NAME = "classpath:AwsCredentials.properties";
 
-	@Value("${amazon.credentials.file}")
+	@Value("${clobaframe.amazon.credentials.file}")
 	private String credentialFilename = DEFAULT_CREDENTIAL_FILE_NAME;
 
 	/**
@@ -43,7 +47,7 @@ public class S3ClientFactory{
 	 * http://docs.amazonwebservices.com/general/latest/gr/rande.html#s3_region
 	 *
 	 */
-	@Value("${blobstore.amazons3.endPoint}")
+	@Value("${clobaframe.blobstore.amazons3.endPoint}")
 	private String endPoint;
 
 	/**
@@ -51,10 +55,10 @@ public class S3ClientFactory{
 	 * http://docs.amazonwebservices.com/general/latest/gr/rande.html#s3_region
 	 *
 	 */
-	@Value("${blobstore.amazons3.locationConstraint}")
+	@Value("${clobaframe.blobstore.amazons3.locationConstraint}")
 	private String locationConstraint;
 
-	@Value("${blobstore.amazons3.secureConnection}")
+	@Value("${clobaframe.blobstore.amazons3.secureConnection}")
 	private boolean secureConnection;
 
 	@Inject
@@ -68,23 +72,24 @@ public class S3ClientFactory{
 	public void init() throws IOException {
 
 		Resource resource = resourceLoader.getResource(credentialFilename);
-		File file = resource.getFile();
-		if (!file.exists()){
-			logger.error("Can not find the file [{}]. Current file path is [{}], class path is [{}], "
-					+ "the setting value is [{}].",
-					new Object[]{
-						file.getAbsolutePath(),
-						resourceLoader.getResource("file:.").getFile().getAbsolutePath(),
-						resourceLoader.getResource("classpath:.").getFile().getAbsolutePath(),
-						credentialFilename});
-			throw new FileNotFoundException("Can not find the credential file.");
+		if (!resource.exists()){
+			throw new FileNotFoundException(
+					String.format(
+							"Can not find the amazon web service credential file [{}].",
+							credentialFilename));
 		}
 
-		AWSCredentials credentials = new PropertiesCredentials(file);
+		InputStream in = resource.getInputStream();
+		
+		AWSCredentials credentials = new PropertiesCredentials(in);
+		
 		client = new AmazonS3Client(
 				credentials,
-				createConfiguration(secureConnection));
+				createAWSClientConfiguration(secureConnection));
+		
 		client.setEndpoint(endPoint);
+		
+		in.close();
 	}
 
 	public AmazonS3 getClient() {
@@ -95,18 +100,22 @@ public class S3ClientFactory{
 		return locationConstraint;
 	}
 
-    private ClientConfiguration createConfiguration(boolean isSecure) {
-        ClientConfiguration config = new ClientConfiguration();
+    private ClientConfiguration createAWSClientConfiguration(boolean isSecure) {
+        
+		ClientConfiguration config = new ClientConfiguration();
         Protocol protocol = isSecure ? Protocol.HTTPS : Protocol.HTTP;
         config.setProtocol(protocol);
 
-		String connectTimeout = System.getProperty("sun.net.client.defaultConnectTimeout",
-				new Integer(DEFAULT_CONNECTION_TIMEOUT).toString());
-		String readTimeout = System.getProperty("sun.net.client.defaultReadTimeout",
-				new Integer(DEFAULT_READ_TIMEOUT).toString());
+		int cTimeout = Integer.parseInt(
+				System.getProperty("sun.net.client.defaultConnectTimeout",
+					Integer.toString(connectionTimeout)));
+		
+		int rTimeout = Integer.parseInt(
+				System.getProperty("sun.net.client.defaultReadTimeout",
+					Integer.toString(readTimeout)));
 
-		config.setConnectionTimeout(Integer.parseInt(connectTimeout));
-		config.setSocketTimeout(Integer.parseInt(readTimeout));
+		config.setConnectionTimeout(cTimeout);
+		config.setSocketTimeout(rTimeout);
 
         return config;
     }

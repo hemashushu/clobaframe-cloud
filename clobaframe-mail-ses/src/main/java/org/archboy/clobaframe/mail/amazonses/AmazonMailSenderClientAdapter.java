@@ -14,7 +14,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import javax.inject.Named;
 import org.archboy.clobaframe.mail.SendMailException;
-import org.archboy.clobaframe.mail.impl.MailSenderClientAdapter;
+import org.archboy.clobaframe.mail.impl.AbstractMailSender;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.PropertiesCredentials;
@@ -31,7 +31,7 @@ import com.amazonaws.services.simpleemail.model.SendEmailRequest;
  * @author yang
  */
 @Named
-public class AmazonMailSenderClientAdapter implements MailSenderClientAdapter{
+public class AmazonMailSenderClientAdapter implements AbstractMailSender{
 
 	private static final String DEFAULT_CREDENTIAL_FILE_NAME = "classpath:AwsCredentials.properties";
 

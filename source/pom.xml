@@ -4,12 +4,12 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.archboy.clobaframe</groupId>
-	<artifactId>clobaframe-amazon-parent</artifactId>
+	<artifactId>clobaframe-cloud-parent</artifactId>
 	<version>2.4</version>
 	<packaging>pom</packaging>
 
-	<name>clobaframe-amazon-parent</name>
-	<url>https://github.com/ivarptr/clobaframe-amazon</url>
+	<name>clobaframe-cloud-parent</name>
+	<url>https://github.com/ivarptr/clobaframe-cloud</url>
 
 	<licenses>
 		<license>
@@ -31,8 +31,9 @@
 	</developers>
 
 	<modules>
-		<module>clobaframe-blobstore-s3</module>
-		<module>clobaframe-mail-ses</module>
+		<module>blobstore-amazon-s3</module>
+		<module>mail-amazon-ses</module>
+		<module>cache-memcached</module>
 	</modules>
 
 	<properties>

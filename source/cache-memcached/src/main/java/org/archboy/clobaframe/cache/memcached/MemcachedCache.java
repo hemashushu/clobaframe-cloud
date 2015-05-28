@@ -15,9 +15,11 @@ import net.spy.memcached.AddrUtil;
 import net.spy.memcached.ConnectionFactoryBuilder;
 import net.spy.memcached.ConnectionFactoryBuilder.Protocol;
 import net.spy.memcached.MemcachedClient;
-import org.archboy.clobaframe.cache.impl.AbstractCache;
+import org.apache.commons.lang3.StringUtils;
 import org.archboy.clobaframe.cache.Cache;
 import org.archboy.clobaframe.cache.Expiration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 
 /**
@@ -27,37 +29,50 @@ import org.springframework.beans.factory.annotation.Value;
  *
  */
 @Named
-public class MemcachedCache extends AbstractCache implements Closeable {
+public class MemcachedCache implements Cache, Closeable {
 
 	private MemcachedClient client;
 
-	private static final Protocol DEFAULT_PROTOCOL = Protocol.TEXT;
-	private static final String DEFAULT_SERVERS = "127.0.0.1:11211";
+	private static final String DEFAULT_PROTOCOL = "TEXT"; //Protocol.TEXT;
+	private static final String DEFAULT_SERVERS = ""; // "127.0.0.1:11211";
 	private static final String DEFAULT_SPY_MEMCACHED_LOGGER = "net.spy.memcached.compat.log.Log4JLogger";
 
-	private String spymemcachedLogger = DEFAULT_SPY_MEMCACHED_LOGGER;
+	@Value("${clobaframe.cache.memcached.protocol:" + DEFAULT_PROTOCOL + "}")
+	private Protocol protocol;
 
-	@Value("${clobaframe.cache.memcached.protocol}")
-	private Protocol protocol = DEFAULT_PROTOCOL;
-
-	@Value("${clobaframe.cache.memcached.servers}")
+	@Value("${clobaframe.cache.memcached.servers:" + DEFAULT_SERVERS + "}")
 	private String servers = DEFAULT_SERVERS;
 
+	private String spymemcachedLogger = DEFAULT_SPY_MEMCACHED_LOGGER;
+	
+	private final Logger logger = LoggerFactory.getLogger(MemcachedCache.class);
+	
 	@PostConstruct
-	public void init() throws IOException{
+	public void init() {
 
 		// set spymemcached logger
 		System.setProperty("net.spy.log.LoggerImpl", spymemcachedLogger);
 
+		if (StringUtils.isEmpty(servers)){
+			return;
+		}
+		
 		ConnectionFactoryBuilder builder = new ConnectionFactoryBuilder();
 		builder.setProtocol(protocol);
-		client = new MemcachedClient(builder.build(), AddrUtil.getAddresses(servers));
+		
+		try{
+			client = new MemcachedClient(builder.build(), AddrUtil.getAddresses(servers));
+		}catch(IOException e){
+			logger.error("Can not initial memcached client, cause: {}.", e.getMessage());
+		}
 	}
 
 	@PreDestroy
 	@Override
-	public void close(){
-		client.shutdown();
+	public void close() throws IOException{
+		if (client != null) {
+			client.shutdown();
+		}
 	}
 
 	public void setSpymemcachedLogger(String spymemcachedLogger) {
@@ -79,7 +94,7 @@ public class MemcachedCache extends AbstractCache implements Closeable {
 		Future<Boolean> result = client.delete(key);
 
 		try{
-			return result.get().booleanValue();
+			return result.get();
 		}catch(ExecutionException e){
 			// ignore
 		}catch(InterruptedException e){
@@ -128,7 +143,7 @@ public class MemcachedCache extends AbstractCache implements Closeable {
 		}
 
 		try{
-			return result.get().booleanValue();
+			return result.get();
 		}catch(ExecutionException e){
 			// ignore
 		}catch(InterruptedException e){

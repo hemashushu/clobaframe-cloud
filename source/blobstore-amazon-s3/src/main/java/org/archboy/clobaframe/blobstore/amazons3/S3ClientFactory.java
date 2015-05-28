@@ -13,6 +13,7 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,9 +35,12 @@ public class S3ClientFactory{
 	private int connectionTimeout = DEFAULT_CONNECTION_TIMEOUT;
 	private int readTimeout = DEFAULT_READ_TIMEOUT;
 	
-	private static final String DEFAULT_CREDENTIAL_FILE_NAME = "classpath:AwsCredentials.properties";
-
-	@Value("${clobaframe.amazon.credentials.file}")
+	private static final String DEFAULT_CREDENTIAL_FILE_NAME = ""; //"classpath:AwsCredentials.properties";
+	private static final String DEFAULT_ENDPOINT = ""; //"s3.amazonaws.com";
+	private static final String DEFAULT_LOCATION_CONSTRAINT = "";
+	private static final boolean DEFAULT_SECURE_CONNECTION = true;
+	
+	@Value("${clobaframe.amazon.credentials.file:" + DEFAULT_CREDENTIAL_FILE_NAME + "}")
 	private String credentialFilename = DEFAULT_CREDENTIAL_FILE_NAME;
 
 	/**
@@ -44,7 +48,7 @@ public class S3ClientFactory{
 	 * http://docs.amazonwebservices.com/general/latest/gr/rande.html#s3_region
 	 *
 	 */
-	@Value("${clobaframe.blobstore.amazons3.endPoint}")
+	@Value("${clobaframe.blobstore.amazons3.endPoint:" + DEFAULT_ENDPOINT + "}")
 	private String endPoint;
 
 	/**
@@ -52,10 +56,10 @@ public class S3ClientFactory{
 	 * http://docs.amazonwebservices.com/general/latest/gr/rande.html#s3_region
 	 *
 	 */
-	@Value("${clobaframe.blobstore.amazons3.locationConstraint}")
+	@Value("${clobaframe.blobstore.amazons3.locationConstraint:" + DEFAULT_LOCATION_CONSTRAINT + "}")
 	private String locationConstraint;
 
-	@Value("${clobaframe.blobstore.amazons3.secureConnection}")
+	@Value("${clobaframe.blobstore.amazons3.secureConnection:" + DEFAULT_SECURE_CONNECTION + "}")
 	private boolean secureConnection;
 
 	@Inject
@@ -67,7 +71,11 @@ public class S3ClientFactory{
 
 	@PostConstruct
 	public void init() throws IOException {
-
+		if (StringUtils.isEmpty(credentialFilename) ||
+				StringUtils.isEmpty(endPoint)) {
+			return;
+		}
+		
 		Resource resource = resourceLoader.getResource(credentialFilename);
 		if (!resource.exists()){
 			throw new FileNotFoundException(
@@ -76,17 +84,20 @@ public class S3ClientFactory{
 							credentialFilename));
 		}
 
-		InputStream in = resource.getInputStream();
+		InputStream in = null;
 		
-		AWSCredentials credentials = new PropertiesCredentials(in);
-		
-		client = new AmazonS3Client(
-				credentials,
-				createAWSClientConfiguration(secureConnection));
-		
-		client.setEndpoint(endPoint);
-		
-		IOUtils.closeQuietly(in);
+		try {
+			in =resource.getInputStream();
+			AWSCredentials credentials = new PropertiesCredentials(in);
+
+			client = new AmazonS3Client(
+					credentials,
+					createAWSClientConfiguration(secureConnection));
+
+			client.setEndpoint(endPoint);
+		}finally{
+			IOUtils.closeQuietly(in);
+		}
 	}
 
 	public AmazonS3 getClient() {

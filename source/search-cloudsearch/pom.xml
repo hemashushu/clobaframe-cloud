@@ -5,15 +5,15 @@
 
 	<parent>
 		<groupId>org.archboy.clobaframe</groupId>
-		<artifactId>clobaframe-cloud-parent</artifactId>
+		<artifactId>clobaframe-parent</artifactId>
 		<version>2.5</version>
 	</parent>
 
-	<artifactId>clobaframe-mail-amazon-ses</artifactId>
+	<artifactId>clobaframe-cloudsearch</artifactId>
 	<packaging>jar</packaging>
 
-	<name>clobaframe-mail-amazon-ses</name>
-	<url>https://github.com/ivarptr/clobaframe-cloud</url>
+	<name>clobaframe-cloudsearch</name>
+	<url>https://github.com/ivarptr/clobaframe</url>
 
 	<developers>
 		<developer>
@@ -27,19 +27,6 @@
 	</properties>
 
 	<dependencies>
-		<!-- Clobaframe -->
-		<dependency>
-			<groupId>org.archboy.clobaframe</groupId>
-			<artifactId>clobaframe-setting</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.archboy.clobaframe</groupId>
-			<artifactId>clobaframe-mail</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-
 		<!-- Logging -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
@@ -95,55 +82,11 @@
 			<artifactId>spring-test</artifactId>
 		</dependency>
 
-		<!-- Apache http components -->
-		<!-- need by amazon sdk -->
+		<!-- clobaframe -->
 		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpcore</artifactId>
+			<groupId>org.archboy.clobaframe</groupId>
+			<artifactId>clobaframe-search</artifactId>
+			<version>${project.version}</version>
 		</dependency>
-
-		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpclient</artifactId>
-		</dependency>
-
-		<!-- Jackson JSON Mapper -->
-		<!-- need by amazon sdk -->
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-annotations</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-core</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-databind</artifactId>
-		</dependency>
-
-		<!-- Amazon SDK -->
-		<!-- need by clobaframe-blobstore-s3 -->
-		<dependency>
-			<groupId>com.amazonaws</groupId>
-			<artifactId>aws-java-sdk</artifactId>
-		</dependency>
-
-		<!-- need by amazon sdk -->
-		<dependency>
-			<artifactId>mail</artifactId>
-			<groupId>javax.mail</groupId>
-			<version>1.4.7</version>
-		</dependency>
-
-		<!-- javax servlet for test -->
-		<!-- need by clobaframe-io -->
-		<dependency>
-			<groupId>org.mortbay.jetty</groupId>
-			<artifactId>servlet-api</artifactId>
-		</dependency>
-		
 	</dependencies>
 </project>

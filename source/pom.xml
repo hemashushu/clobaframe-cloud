@@ -34,6 +34,7 @@
 		<module>blobstore-amazon-s3</module>
 		<module>mail-amazon-ses</module>
 		<module>cache-memcached</module>
+		<module>search-cloudsearch</module>
 	</modules>
 
 	<properties>

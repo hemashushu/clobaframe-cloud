@@ -1,6 +1,5 @@
 package org.archboy.clobaframe.mail;
 
-
 import java.util.Date;
 import org.junit.After;
 import org.junit.Before;

@@ -28,6 +28,7 @@ import com.amazonaws.services.simpleemail.model.SendEmailRequest;
 import java.io.InputStream;
 import java.util.Arrays;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Send mail by Amazon SNS service.
@@ -37,12 +38,13 @@ import org.apache.commons.io.IOUtils;
 @Named
 public class AmazonSimpleMailSender extends AbstractMailSender {
 
-	private static final String DEFAULT_CREDENTIAL_FILE_NAME = "classpath:AwsCredentials.properties";
+	private static final String DEFAULT_CREDENTIAL_FILE_NAME = ""; // "classpath:AwsCredentials.properties";
+	private static final String DEFAULT_SENDER_ADDRESS = "";
+	
+	@Value("${clobaframe.amazon.credentials.file:" + DEFAULT_CREDENTIAL_FILE_NAME + "}")
+	private String credentialFilename;
 
-	@Value("${clobaframe.amazon.credentials.file}")
-	private String credentialFilename = DEFAULT_CREDENTIAL_FILE_NAME;
-
-	@Value("${clobaframe.mail.amazonses.fromAddress}")
+	@Value("${clobaframe.mail.amazonses.fromAddress" + DEFAULT_SENDER_ADDRESS + "}")
 	private String fromAddress; 
 
 	@Inject
@@ -54,6 +56,11 @@ public class AmazonSimpleMailSender extends AbstractMailSender {
 
 	@PostConstruct
 	public void init() throws IOException{
+		if (StringUtils.isEmpty(credentialFilename) ||
+				StringUtils.isEmpty(fromAddress)){
+			return;
+		}
+		
 		Resource resource = resourceLoader.getResource(credentialFilename);
 		if (!resource.exists()){
 			throw new FileNotFoundException(
@@ -62,13 +69,20 @@ public class AmazonSimpleMailSender extends AbstractMailSender {
 							credentialFilename));
 		}
 
-		InputStream in = resource.getInputStream();
-		AWSCredentials credentials = new PropertiesCredentials(in);
-		IOUtils.closeQuietly(in);
+		InputStream in = null;
+		try{
+			in = resource.getInputStream();
+			AWSCredentials credentials = new PropertiesCredentials(in);
+			IOUtils.closeQuietly(in);
 
-		// Set AWS access credentials
-		client = new AmazonSimpleEmailServiceClient(credentials)
-				.withEndpoint("email.us-east-1.amazonaws.com");
+			// Set AWS access credentials
+			client = new AmazonSimpleEmailServiceClient(credentials)
+					.withEndpoint("email.us-east-1.amazonaws.com");
+//		}catch(IOException e){
+//			logger.error("can not load amazon simple email service.");
+		}finally{
+			IOUtils.closeQuietly(in);
+		}
 	}
 
 	@Override

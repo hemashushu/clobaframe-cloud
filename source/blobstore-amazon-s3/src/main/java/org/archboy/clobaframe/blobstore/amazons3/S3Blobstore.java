@@ -12,7 +12,6 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
 import org.archboy.clobaframe.blobstore.BlobResourceRepository;
-import org.archboy.clobaframe.blobstore.impl.AbstractBlobstore;
 
 /**
  * {@link Blobstore} implements for Amazon S3.
@@ -21,7 +20,7 @@ import org.archboy.clobaframe.blobstore.impl.AbstractBlobstore;
  *
  */
 @Named
-public class S3Blobstore extends AbstractBlobstore {
+public class S3Blobstore implements Blobstore {
 
 	@Inject
 	private S3ClientFactory clientFactory;

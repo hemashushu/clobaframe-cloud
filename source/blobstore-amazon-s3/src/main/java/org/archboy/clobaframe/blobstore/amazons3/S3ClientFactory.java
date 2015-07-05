@@ -16,7 +16,9 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ResourceLoaderAware;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 
@@ -27,7 +29,7 @@ import org.springframework.core.io.ResourceLoader;
  *
  */
 @Named
-public class S3ClientFactory{
+public class S3ClientFactory implements ResourceLoaderAware, InitializingBean {
 
 	private static final int DEFAULT_CONNECTION_TIMEOUT = 30 * 1000;
 	private static final int DEFAULT_READ_TIMEOUT = 30 * 1000;
@@ -41,7 +43,7 @@ public class S3ClientFactory{
 	private static final boolean DEFAULT_SECURE_CONNECTION = true;
 	
 	@Value("${clobaframe.amazon.credentials.file:" + DEFAULT_CREDENTIAL_FILE_NAME + "}")
-	private String credentialFilename = DEFAULT_CREDENTIAL_FILE_NAME;
+	private String credentialFilename;
 
 	/**
 	 * Amazon s3 region end endpoint, see:
@@ -62,15 +64,38 @@ public class S3ClientFactory{
 	@Value("${clobaframe.blobstore.amazons3.secureConnection:" + DEFAULT_SECURE_CONNECTION + "}")
 	private boolean secureConnection;
 
-	@Inject
+	//@Inject
 	private ResourceLoader resourceLoader;
 
 	private AmazonS3 client;
 
 	private Logger logger = LoggerFactory.getLogger(S3ClientFactory.class);
 
-	@PostConstruct
-	public void init() throws IOException {
+	@Override
+	public void setResourceLoader(ResourceLoader resourceLoader) {
+		this.resourceLoader = resourceLoader;
+	}
+
+	public void setCredentialFilename(String credentialFilename) {
+		this.credentialFilename = credentialFilename;
+	}
+
+	public void setEndPoint(String endPoint) {
+		this.endPoint = endPoint;
+	}
+
+	public void setLocationConstraint(String locationConstraint) {
+		this.locationConstraint = locationConstraint;
+	}
+
+	public void setSecureConnection(boolean secureConnection) {
+		this.secureConnection = secureConnection;
+	}
+
+	//@PostConstruct
+	@Override
+	public void afterPropertiesSet() throws Exception {
+
 		if (StringUtils.isEmpty(credentialFilename) ||
 				StringUtils.isEmpty(endPoint)) {
 			return;

@@ -30,7 +30,6 @@ import static org.junit.Assert.*;
 public class S3BlobResourceRepositoryTest {
 
 	@Inject
-	//@Named("defaultBlobstore")
 	private BlobstoreManager blobstoreManager;
 	
 	private BlobResourceInfoFactory blobResourceInfoFactory = new DefaultBlobResourceInfoFactory();

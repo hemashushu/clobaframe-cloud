@@ -12,6 +12,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
 import org.archboy.clobaframe.blobstore.BlobResourceRepository;
+import org.springframework.beans.factory.InitializingBean;
 
 /**
  * {@link Blobstore} implements for Amazon S3.
@@ -20,15 +21,20 @@ import org.archboy.clobaframe.blobstore.BlobResourceRepository;
  *
  */
 @Named
-public class S3Blobstore implements Blobstore {
+public class S3Blobstore implements Blobstore, InitializingBean {
 
 	@Inject
 	private S3ClientFactory clientFactory;
 
 	private AmazonS3 client;
 
-	@PostConstruct
-	public void init(){
+	public void setClientFactory(S3ClientFactory clientFactory) {
+		this.clientFactory = clientFactory;
+	}
+
+	//@PostConstruct
+	@Override
+	public void afterPropertiesSet() throws Exception {
 		client = clientFactory.getClient();
 	}
 

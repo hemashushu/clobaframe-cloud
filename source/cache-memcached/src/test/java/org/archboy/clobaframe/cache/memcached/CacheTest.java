@@ -19,7 +19,6 @@ import static org.junit.Assert.*;
 public class CacheTest {
 
 	@Inject
-	//@Named("defaultCache")
 	private CacheManager cacheManager;
 
 	@Before

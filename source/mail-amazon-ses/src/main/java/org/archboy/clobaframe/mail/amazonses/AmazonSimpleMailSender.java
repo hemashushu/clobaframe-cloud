@@ -29,6 +29,8 @@ import java.io.InputStream;
 import java.util.Arrays;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.context.ResourceLoaderAware;
 
 /**
  * Send mail by Amazon SNS service.
@@ -36,7 +38,8 @@ import org.apache.commons.lang3.StringUtils;
  * @author yang
  */
 @Named
-public class AmazonSimpleMailSender extends AbstractMailSender {
+public class AmazonSimpleMailSender extends AbstractMailSender 
+	implements ResourceLoaderAware, InitializingBean {
 
 	private static final String DEFAULT_CREDENTIAL_FILE_NAME = ""; // "classpath:AwsCredentials.properties";
 	private static final String DEFAULT_SENDER_ADDRESS = "";
@@ -47,15 +50,30 @@ public class AmazonSimpleMailSender extends AbstractMailSender {
 	@Value("${clobaframe.mail.amazonses.fromAddress" + DEFAULT_SENDER_ADDRESS + "}")
 	private String fromAddress; 
 
-	@Inject
+	//@Inject
 	private ResourceLoader resourceLoader;
 
 	private AmazonSimpleEmailServiceClient client;
 	
 	private Logger logger = LoggerFactory.getLogger(AmazonSimpleMailSender.class);
 
-	@PostConstruct
-	public void init() throws IOException{
+	@Override
+	public void setResourceLoader(ResourceLoader resourceLoader) {
+		this.resourceLoader = resourceLoader;
+	}
+
+	public void setCredentialFilename(String credentialFilename) {
+		this.credentialFilename = credentialFilename;
+	}
+
+	public void setFromAddress(String fromAddress) {
+		this.fromAddress = fromAddress;
+	}
+
+	//@PostConstruct
+	@Override
+	public void afterPropertiesSet() throws Exception {
+
 		if (StringUtils.isEmpty(credentialFilename) ||
 				StringUtils.isEmpty(fromAddress)){
 			return;

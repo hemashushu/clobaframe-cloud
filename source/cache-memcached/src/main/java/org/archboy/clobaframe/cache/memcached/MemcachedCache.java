@@ -20,6 +20,8 @@ import org.archboy.clobaframe.cache.Cache;
 import org.archboy.clobaframe.cache.Expiration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
 
 /**
@@ -29,7 +31,7 @@ import org.springframework.beans.factory.annotation.Value;
  *
  */
 @Named
-public class MemcachedCache implements Cache, Closeable {
+public class MemcachedCache implements Cache, InitializingBean, DisposableBean {
 
 	private MemcachedClient client;
 
@@ -46,9 +48,18 @@ public class MemcachedCache implements Cache, Closeable {
 	private String spymemcachedLogger = DEFAULT_SPY_MEMCACHED_LOGGER;
 	
 	private final Logger logger = LoggerFactory.getLogger(MemcachedCache.class);
-	
-	@PostConstruct
-	public void init() {
+
+	public void setProtocol(Protocol protocol) {
+		this.protocol = protocol;
+	}
+
+	public void setServers(String servers) {
+		this.servers = servers;
+	}
+
+	//@PostConstruct
+	@Override
+	public void afterPropertiesSet() throws Exception {
 
 		// set spymemcached logger
 		System.setProperty("net.spy.log.LoggerImpl", spymemcachedLogger);
@@ -67,9 +78,9 @@ public class MemcachedCache implements Cache, Closeable {
 		}
 	}
 
-	@PreDestroy
+	//@PreDestroy
 	@Override
-	public void close() throws IOException{
+	public void destroy() throws Exception {
 		if (client != null) {
 			client.shutdown();
 		}
